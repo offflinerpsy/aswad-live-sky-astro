@@ -1,0 +1,82 @@
+---
+/** Живой hero с движущимся небом. Самодостаточный, CSS встроен. **/
+
+// Параметры:
+// - forceMotion: принудительно включить анимацию даже при prefers-reduced-motion
+// - speed: 'fast' | 'normal' | 'slow' — скорость анимации
+const { forceMotion = true, speed = 'normal' } = Astro.props;
+
+function getDur(which){
+  const map = {
+    fast: { clouds: '30s', stars: '60s' },
+    normal:{ clouds: '60s', stars: '120s' },
+    slow: { clouds: '170s', stars: '260s' },
+  };
+  const cfg = map[speed] ?? map.normal;
+  return cfg[which];
+}
+---
+
+<section class="live-sky-hero" aria-label="Вечерний дом с живым небом" data-force-motion={String(forceMotion)} style={`--clouds-duration:${getDur('clouds')}; --stars-duration:${getDur('stars')};`}>
+  <div class="sky clouds"></div>
+  <div class="sky stars" aria-hidden="true"></div>
+  <img class="fg" src="/live-sky/foreground_house_final.png" alt="Дом" loading="eager" decoding="async" />
+</section>
+
+<style>
+.live-sky-hero{
+  position:relative; aspect-ratio:16/9; width:100%;
+  overflow:hidden; border-radius:18px; background:#0c1220;
+  box-shadow:0 28px 65px rgba(0,0,0,.48);
+}
+.live-sky-hero .sky{ position:absolute; inset:0; }
+.live-sky-hero .clouds{
+  background:url('/live-sky/clouds_tile_1024_dark_final.png') repeat 0 0 / 1400px 1400px;
+  filter:brightness(.90) saturate(1.04) contrast(1.03);
+  animation:live-sky-clouds var(--clouds-duration, 60s) linear infinite;
+}
+.live-sky-hero .clouds::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:url('/live-sky/clouds_tile_1024_dark_final.png') repeat 50% 0 / 1400px 1400px;
+  opacity:.7; filter:brightness(.92) saturate(1.03);
+  animation:live-sky-clouds var(--clouds-duration, 60s) linear infinite;
+  animation-delay: calc(var(--clouds-duration, 60s) / -2);
+}
+.live-sky-hero .stars{
+  background:url('/live-sky/stars_tile_512_subtle_final.png') repeat 0 0 / 700px 700px;
+  opacity:.15; mix-blend-mode:screen;
+  animation:live-sky-stars var(--stars-duration, 120s) linear infinite;
+}
+.live-sky-hero .stars::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:url('/live-sky/stars_tile_512_subtle_final.png') repeat 50% 0 / 700px 700px;
+  opacity:.12; mix-blend-mode:screen;
+  animation:live-sky-stars var(--stars-duration, 120s) linear infinite;
+  animation-delay: calc(var(--stars-duration, 120s) / -2);
+}
+.live-sky-hero .fg{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+}
+
+@keyframes live-sky-clouds{
+  from{ background-position:0 0; } to{ background-position:2200px 420px; }
+}
+@keyframes live-sky-stars{
+  from{ background-position:0 0; } to{ background-position:900px 70px; }
+}
+
+/* Доступность: отключить анимации при предпочтении пользователя.
+   Если установлен data-force-motion=\"true\" — оставляем анимации включёнными. */
+@media (prefers-reduced-motion: reduce){
+  .live-sky-hero:not([data-force-motion=\"true\"]) .clouds,
+  .live-sky-hero:not([data-force-motion=\"true\"]) .stars{ animation:none !important; }
+}
+
+/* Лёгкая маска сверху, чтобы скрыть возможные стыки тайлов по вертикали */
+.live-sky-hero::before{
+  content:""; position:absolute; inset:0 0 auto 0; height:30%; pointer-events:none;
+  background:linear-gradient(180deg, rgba(12,18,32,.6) 0%, rgba(12,18,32,0) 100%);
+  z-index:1;
+}
+.live-sky-hero .fg{ z-index:2; }
+</style>
